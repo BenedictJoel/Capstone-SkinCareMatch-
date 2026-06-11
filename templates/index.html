@@ -1,0 +1,1666 @@
+<!-- <!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skincare AI & Acne Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans pb-20">
+
+    <header class="bg-emerald-600 text-white shadow-md p-6 text-center">
+        <h1 class="text-3xl font-bold"><i class="fa-solid fa-leaf mr-2"></i> Skincare AI Analyzer</h1>
+        <p class="mt-2 text-emerald-100">Rekomendasi Berbasis NLP Pakar & Computer Vision (Deteksi Level Jerawat)</p>
+    </header>
+
+    <main class="max-w-4xl mx-auto mt-8 p-4">
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-slate-200">
+            <h2 class="text-xl font-bold mb-4 text-emerald-700"><i class="fa-solid fa-pen mr-2"></i> Langkah 1: Tuliskan Keluhan Anda</h2>
+            <textarea id="keluhan" rows="3" class="w-full p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" placeholder="Contoh: Saya butuh pelembap untuk kulit kering dan kusam..."></textarea>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Harga Minimum (Rp)</label>
+                    <input type="number" id="min_price" value="0" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Harga Maksimum (Rp)</label>
+                    <input type="number" id="max_price" value="1000000" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Alergi Bahan (Opsional)</label>
+                    <input type="text" id="allergies" placeholder="Contoh: fragrance, alcohol" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-slate-200">
+            <h2 class="text-xl font-bold mb-4 text-emerald-700"><i class="fa-solid fa-camera mr-2"></i> Langkah 2: Scan Tingkat Keparahan Jerawat</h2>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1 flex flex-col items-center">
+                    <div class="relative w-full max-w-sm rounded-lg overflow-hidden bg-black aspect-[4/3] flex items-center justify-center">
+                        <video id="video" autoplay class="w-full h-full object-cover"></video>
+                        <canvas id="canvas" class="hidden"></canvas>
+                    </div>
+                    <button onclick="captureFace()" class="mt-4 w-full max-w-sm bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300">
+                        <i class="fa-solid fa-camera-retro mr-2"></i> Ambil Foto & Analisis
+                    </button>
+                </div>
+
+                <div class="flex-1 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg p-4 relative min-h-[250px]">
+                    <div id="visionResult" class="hidden w-full text-center">
+                        <span class="inline-block bg-emerald-100 text-emerald-800 text-sm font-bold px-3 py-1 rounded-full mb-2">Hasil AI Camera:</span>
+                        <p id="detectedClass" class="text-lg font-bold text-slate-700 mb-4"></p>
+                    </div>
+                    <img id="resultImage" class="hidden w-full max-w-sm rounded-lg border-4 border-emerald-500 shadow-lg object-cover" alt="Hasil Scan">
+                    
+                    <p id="placeholderImgText" class="text-slate-400 text-center"><i class="fa-solid fa-image text-3xl mb-2 block"></i>Hasil foto scan akan muncul di sini</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mb-10">
+            <button onclick="getRecommendation()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 px-10 rounded-full shadow-xl transition duration-300 text-lg">
+                <i class="fa-solid fa-magnifying-glass mr-2"></i> Dapatkan Rekomendasi Produk
+            </button>
+        </div>
+
+        <div id="loading" class="hidden text-center my-8">
+            <i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-600 mb-2"></i>
+            <p class="text-slate-500 font-semibold">AI sedang memproses kecocokan bahan aktif...</p>
+        </div>
+
+        <div id="results" class="hidden space-y-8">
+            <div>
+                <h3 class="text-2xl font-bold mb-4 text-amber-600 border-b-2 border-amber-200 pb-2"><i class="fa-solid fa-sun mr-2"></i> Rutinitas Pagi</h3>
+                <div id="pagi-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+            
+            <div class="mt-8">
+                <h3 class="text-2xl font-bold mb-4 text-indigo-600 border-b-2 border-indigo-200 pb-2"><i class="fa-solid fa-moon mr-2"></i> Rutinitas Malam</h3>
+                <div id="malam-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+
+            <div class="text-center mt-10 pb-5">
+                <button onclick="downloadPDF()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 text-lg mx-auto flex items-center justify-center">
+                    <i class="fa-solid fa-file-pdf mr-2"></i> Unduh Hasil Rekomendasi (PDF)
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // TAMBAHAN: Variabel untuk menyimpan data hasil fetch
+        let currentRoutineData = null;
+
+        // Menyalakan Kamera
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                })
+                .catch(function(err) {
+                    console.error("Error mengakses kamera: ", err);
+                    alert("Kamera tidak dapat diakses. Pastikan Anda memberi izin pada browser.");
+                });
+        }
+
+        // Fungsi Memotret & Deteksi Wajah
+        function captureFace() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Image = canvas.toDataURL('image/jpeg');
+
+            fetch('/detect_face', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Image })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    // Tampilkan Hasil Teks
+                    document.getElementById('visionResult').classList.remove('hidden');
+                    document.getElementById('detectedClass').innerText = data.detection;
+                    
+                    // Gabungkan teks keluhan dengan hasil AI
+                    let inputKeluhan = document.getElementById('keluhan');
+                    let teksLama = inputKeluhan.value.replace(/ \| AI mendeteksi.*/g, ''); 
+                    
+                    if (teksLama.trim() === "") {
+                        inputKeluhan.value = "AI mendeteksi wajah saya: " + data.detection;
+                    } else {
+                        inputKeluhan.value = teksLama + " | AI mendeteksi wajah saya: " + data.detection;
+                    }
+
+                    // Tampilkan Gambar Berkotak Hijau
+                    const resultImg = document.getElementById('resultImage');
+                    document.getElementById('placeholderImgText').classList.add('hidden');
+                    resultImg.classList.remove('hidden');
+                    resultImg.src = data.image_with_boxes; 
+                } else {
+                    alert("Error AI: " + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Terjadi kesalahan saat memproses gambar.");
+            });
+        }
+
+        // Fungsi Mengambil Rekomendasi dari NLP
+        function getRecommendation() {
+            const keluhan = document.getElementById('keluhan').value;
+            const min_price = document.getElementById('min_price').value;
+            const max_price = document.getElementById('max_price').value;
+            let allergiesStr = document.getElementById('allergies').value;
+            
+            // Format alergi
+            let allergies = allergiesStr ? allergiesStr.split(',').map(item => item.trim()) : [];
+
+            if (!keluhan.trim()) {
+                alert("Tolong tuliskan keluhan atau ambil foto wajah Anda terlebih dahulu.");
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+
+            fetch('/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    keluhan: keluhan,
+                    min_price: min_price,
+                    max_price: max_price,
+                    allergies: allergies
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // TAMBAHAN: Simpan data ke variabel global agar bisa dibuatkan PDF
+                currentRoutineData = data;
+
+                document.getElementById('results').classList.remove('hidden');
+                renderList('pagi-list', data.pagi);
+                renderList('malam-list', data.malam);
+            })
+            .catch(err => {
+                document.getElementById('loading').classList.add('hidden');
+                alert("Terjadi kesalahan server saat mencari produk.");
+            });
+        }
+
+        // Fungsi Render Kartu Produk
+        function renderList(elementId, items) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 italic">Tidak ada produk yang cocok ditemukan.</p>';
+                return;
+            }
+
+            items.forEach(item => {
+                const card = `
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
+                        <div class="h-48 bg-slate-100 p-4 flex justify-center items-center relative">
+                            <span class="absolute top-2 right-2 bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full">
+                                Match: ${item.score}%
+                            </span>
+                            <img src="${item.image}" alt="${item.name}" class="max-h-full object-contain" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+                        </div>
+                        <div class="p-5">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">${item.brand}</p>
+                            <h4 class="font-bold text-slate-800 mb-2 leading-tight">${item.name}</h4>
+                            <div class="flex justify-between items-end mt-4">
+                                <span class="text-sm bg-slate-100 text-slate-600 px-2 py-1 rounded">${item.type}</span>
+                                <span class="font-bold text-emerald-600">${item.price}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // TAMBAHAN: Fungsi Generate PDF
+        function downloadPDF() {
+            if (!currentRoutineData) {
+                alert("Belum ada data untuk diunduh.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Set Judul
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.text("Rekomendasi Skincare AI Analyzer", 105, 20, null, null, "center");
+            
+            // Set Keluhan User
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            const keluhanText = doc.splitTextToSize("Keluhan Anda: " + document.getElementById('keluhan').value, 180);
+            doc.text(keluhanText, 15, 30);
+
+            let yPos = 40 + (keluhanText.length * 5);
+
+            // Tulis Rutinitas Pagi
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("--- Rutinitas Pagi ---", 15, yPos);
+            yPos += 10;
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            currentRoutineData.pagi.forEach((item, index) => {
+                doc.text(`${index + 1}. ${item.brand} - ${item.name}`, 15, yPos);
+                yPos += 6;
+                doc.setTextColor(100); 
+                doc.text(`   Harga: ${item.price} | Tipe: ${item.type}`, 15, yPos);
+                doc.setTextColor(0); 
+                yPos += 8;
+                
+                if(yPos > 270) { doc.addPage(); yPos = 20; }
+            });
+
+            yPos += 5;
+            if(yPos > 260) { doc.addPage(); yPos = 20; }
+
+            // Tulis Rutinitas Malam
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("--- Rutinitas Malam ---", 15, yPos);
+            yPos += 10;
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            currentRoutineData.malam.forEach((item, index) => {
+                doc.text(`${index + 1}. ${item.brand} - ${item.name}`, 15, yPos);
+                yPos += 6;
+                doc.setTextColor(100); 
+                doc.text(`   Harga: ${item.price} | Tipe: ${item.type}`, 15, yPos);
+                doc.setTextColor(0); 
+                yPos += 8;
+
+                if(yPos > 270) { doc.addPage(); yPos = 20; }
+            });
+
+            // Simpan File
+            doc.save("Rekomendasi_Skincare.pdf");
+        }
+    </script>
+</body>
+</html> -->
+
+
+<!-- <!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skincare AI & Acne Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans pb-20 overflow-x-hidden">
+
+    <header class="bg-emerald-600 text-white shadow-md p-6 text-center w-full">
+        <h1 class="text-3xl font-bold"><i class="fa-solid fa-leaf mr-2"></i> Skincare AI Analyzer</h1>
+        <p class="mt-2 text-emerald-100">Rekomendasi Berbasis Pakar & Computer Vision</p>
+    </header>
+
+    <div class="max-w-7xl mx-auto mt-8 px-4 flex justify-center">
+        <ul class="flex w-full max-w-3xl justify-between items-center relative">
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-1" class="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">1</div>
+                <span class="text-xs font-semibold mt-2 text-emerald-700">Analisis</span>
+            </li>
+            <li class="flex-1 h-1 bg-slate-200 mx-2 rounded relative"><div id="line-1" class="absolute h-full bg-emerald-600 w-0 transition-all duration-500"></div></li>
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-2" class="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">2</div>
+                <span class="text-xs font-semibold mt-2 text-slate-500" id="text-ind-2">Preferensi</span>
+            </li>
+            <li class="flex-1 h-1 bg-slate-200 mx-2 rounded relative"><div id="line-2" class="absolute h-full bg-emerald-600 w-0 transition-all duration-500"></div></li>
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-3" class="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">3</div>
+                <span class="text-xs font-semibold mt-2 text-slate-500" id="text-ind-3">Hasil Roadmap</span>
+            </li>
+        </ul>
+    </div>
+
+    <main class="w-full max-w-7xl mx-auto mt-8 px-4">
+        
+        <div id="page1" class="fade-in block">
+            <div class="bg-white rounded-2xl shadow-sm p-8 border border-slate-200">
+                
+                <div class="mb-10">
+                    <h2 class="text-2xl font-bold mb-4 text-emerald-700"><i class="fa-solid fa-pen mr-2"></i> Detailkan Masalah Kulit Anda</h2>
+                    <p class="text-slate-500 mb-4 text-sm">Ceritakan masalah yang Anda alami secara natural. AI kami akan menerjemahkannya ke kandungan bahan yang tepat.</p>
+                    <textarea id="keluhan" rows="4" class="w-full p-4 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition text-lg resize-none" placeholder="Contoh: Saya butuh pelindung cahaya matahari karena sering kerja outdoor, tapi kulit saya gampang merah..."></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700"><i class="fa-solid fa-camera mr-2"></i> Scan Wajah (Opsional)</h2>
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        
+                        <div class="flex-1 flex flex-col items-center bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <div class="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-black shadow-inner flex items-center justify-center">
+                                <video id="video" autoplay class="w-full h-full object-cover"></video>
+                                <canvas id="canvas" class="hidden"></canvas>
+                            </div>
+                            <button onclick="captureFace()" class="mt-4 w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-300">
+                                <i class="fa-solid fa-camera-retro mr-2"></i> Ambil Foto & Analisis
+                            </button>
+                        </div>
+
+                        <div class="flex-1 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-5 relative min-h-[250px]">
+                            <div id="visionResult" class="hidden w-full text-center mb-4">
+                                <span class="inline-block bg-emerald-100 text-emerald-800 text-sm font-bold px-3 py-1 rounded-full mb-2">Hasil Deteksi AI Camera:</span>
+                                <p id="detectedClass" class="text-xl font-bold text-slate-700"></p>
+                            </div>
+                            <img id="resultImage" class="hidden w-full max-w-sm rounded-lg border-4 border-emerald-500 shadow-md object-cover" alt="Hasil Scan">
+                            <p id="placeholderImgText" class="text-slate-400 text-center"><i class="fa-solid fa-image text-3xl mb-2 block"></i>Hasil foto scan akan muncul di sini</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="mt-10 flex justify-end">
+                    <button onclick="goToPage(2)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition duration-300 text-lg flex items-center">
+                        Lanjut ke Preferensi <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="page2" class="fade-in hidden">
+            <div class="bg-white rounded-2xl shadow-sm p-10 border border-slate-200 max-w-4xl mx-auto text-center">
+                <h2 class="text-3xl font-bold mb-2 text-emerald-700"><i class="fa-solid fa-sliders mr-2"></i> Atur Preferensi Anda</h2>
+                <p class="text-slate-500 mb-10">Bantu kami menyesuaikan rekomendasi dengan kantong dan kondisi medis Anda.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <label class="block text-slate-700 font-bold mb-2 text-lg"><i class="fa-solid fa-wallet mr-2 text-emerald-600"></i> Budget Harga</label>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <span class="text-xs text-slate-500 mb-1 block">Minimum (Rp)</span>
+                                <input type="number" id="min_price" value="0" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 text-lg">
+                            </div>
+                            <div class="w-1/2">
+                                <span class="text-xs text-slate-500 mb-1 block">Maksimum (Rp)</span>
+                                <input type="number" id="max_price" value="1000000" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 text-lg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <label class="block text-slate-700 font-bold mb-2 text-lg"><i class="fa-solid fa-ban mr-2 text-red-500"></i> Bahan yang Dihindari</label>
+                        <span class="text-xs text-slate-500 mb-1 block">Pisahkan dengan koma (Contoh: alcohol, fragrance)</span>
+                        <input type="text" id="allergies" placeholder="Ketik di sini..." class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-red-500 text-lg">
+                    </div>
+                </div>
+
+                <div class="mt-12 flex justify-between">
+                    <button onclick="goToPage(1)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-8 rounded-full transition duration-300">
+                        <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
+                    </button>
+                    <button onclick="getRecommendation()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition duration-300 text-lg flex items-center">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Buat Racikan Skincare
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden text-center my-20 fade-in">
+            <div class="inline-block relative w-24 h-24">
+                <div class="absolute top-0 left-0 w-full h-full border-4 border-emerald-200 rounded-full"></div>
+                <div class="absolute top-0 left-0 w-full h-full border-4 border-emerald-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <h3 class="text-2xl font-bold mt-6 text-slate-700">AI Sedang Meracik...</h3>
+            <p class="text-slate-500 mt-2">Mencari kecocokan semantik di seluruh database.</p>
+        </div>
+
+        <div id="page3" class="fade-in hidden pb-20">
+            
+            <div id="pdf-content" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Roadmap Skincare Anda</h2>
+                    <p class="text-slate-500 italic">"Dirancang khusus berdasarkan AI Semantic Analysis"</p>
+                </div>
+
+                <div class="mb-16">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-amber-100 text-amber-600 p-3 rounded-full mr-4 shadow-sm"><i class="fa-solid fa-sun text-2xl"></i></div>
+                        <h3 class="text-2xl font-bold text-slate-800 border-b-4 border-amber-400 pb-1 pr-6 inline-block">Rutinitas Pagi (Day)</h3>
+                    </div>
+                    <div id="pagi-list" class="flex overflow-x-auto hide-scroll gap-6 pb-4 pt-2 px-2 snap-x"></div>
+                </div>
+
+                <div>
+                    <div class="flex items-center mb-6">
+                        <div class="bg-indigo-100 text-indigo-600 p-3 rounded-full mr-4 shadow-sm"><i class="fa-solid fa-moon text-2xl"></i></div>
+                        <h3 class="text-2xl font-bold text-slate-800 border-b-4 border-indigo-400 pb-1 pr-6 inline-block">Rutinitas Malam (Night)</h3>
+                    </div>
+                    <div id="malam-list" class="flex overflow-x-auto hide-scroll gap-6 pb-4 pt-2 px-2 snap-x"></div>
+                </div>
+            </div> 
+
+            <div class="flex justify-center gap-4">
+                <button onclick="goToPage(2)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-8 rounded-full transition duration-300 shadow-sm">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Ulangi
+                </button>
+                <button onclick="downloadRoadmapPDF()" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 px-10 rounded-full shadow-xl transition duration-300 text-lg flex items-center">
+                    <i class="fa-solid fa-file-pdf mr-2 text-xl"></i> Download Roadmap (PDF estetik)
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => { video.srcObject = stream; })
+                .catch(err => { console.error("Kamera error: ", err); });
+        }
+
+        function goToPage(pageNumber) {
+            document.getElementById('page1').classList.add('hidden');
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('page3').classList.add('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('page' + pageNumber).classList.remove('hidden');
+
+            if(pageNumber >= 1) {
+                document.getElementById('ind-1').classList.replace('bg-slate-300', 'bg-emerald-600');
+                document.getElementById('ind-1').classList.replace('text-slate-600', 'text-white');
+            }
+            if(pageNumber >= 2) {
+                document.getElementById('line-1').style.width = "100%";
+                document.getElementById('ind-2').classList.replace('bg-slate-300', 'bg-emerald-600');
+                document.getElementById('ind-2').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('text-ind-2').classList.replace('text-slate-500', 'text-emerald-700');
+            } else {
+                document.getElementById('line-1').style.width = "0%";
+                document.getElementById('ind-2').classList.replace('bg-emerald-600', 'bg-slate-300');
+                document.getElementById('ind-2').classList.replace('text-white', 'text-slate-600');
+                document.getElementById('text-ind-2').classList.replace('text-emerald-700', 'text-slate-500');
+            }
+            if(pageNumber >= 3) {
+                document.getElementById('line-2').style.width = "100%";
+                document.getElementById('ind-3').classList.replace('bg-slate-300', 'bg-emerald-600');
+                document.getElementById('ind-3').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('text-ind-3').classList.replace('text-slate-500', 'text-emerald-700');
+            } else {
+                document.getElementById('line-2').style.width = "0%";
+                document.getElementById('ind-3').classList.replace('bg-emerald-600', 'bg-slate-300');
+                document.getElementById('ind-3').classList.replace('text-white', 'text-slate-600');
+                document.getElementById('text-ind-3').classList.replace('text-emerald-700', 'text-slate-500');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function captureFace() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Image = canvas.toDataURL('image/jpeg');
+
+            fetch('/detect_face', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Image })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    const resultImg = document.getElementById('resultImage');
+                    document.getElementById('placeholderImgText').classList.add('hidden');
+                    resultImg.classList.remove('hidden');
+                    resultImg.src = data.image_with_boxes; 
+                    
+                    document.getElementById('visionResult').classList.remove('hidden');
+                    document.getElementById('detectedClass').innerText = data.detection;
+                    
+                    let inputKeluhan = document.getElementById('keluhan');
+                    let teksLama = inputKeluhan.value.replace(/ \| AI mendeteksi.*/g, ''); 
+                    if (teksLama.trim() === "") {
+                        inputKeluhan.value = "AI mendeteksi wajah saya: " + data.detection;
+                    } else {
+                        inputKeluhan.value = teksLama + " | AI mendeteksi wajah saya: " + data.detection;
+                    }
+                } else {
+                    alert("Error AI Kamera: " + data.error);
+                }
+            })
+            .catch(err => { console.error(err); });
+        }
+
+        function getRecommendation() {
+            const keluhan = document.getElementById('keluhan').value;
+            const min_price = document.getElementById('min_price').value;
+            const max_price = document.getElementById('max_price').value;
+            let allergiesStr = document.getElementById('allergies').value;
+            let allergies = allergiesStr ? allergiesStr.split(',').map(item => item.trim()) : [];
+
+            if (!keluhan.trim()) {
+                alert("Mohon isi keluhan Anda di halaman pertama sebelum meracik.");
+                goToPage(1);
+                return;
+            }
+
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            fetch('/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keluhan, min_price, max_price, allergies })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.error) {
+                    alert(data.error);
+                    goToPage(1);
+                    return;
+                }
+                
+                goToPage(3);
+                renderRoadmap('pagi-list', data.pagi);
+                renderRoadmap('malam-list', data.malam);
+            })
+            .catch(err => {
+                document.getElementById('loading').classList.add('hidden');
+                alert("Terjadi kesalahan server saat memproses AI.");
+                goToPage(2);
+            });
+        }
+
+        function renderRoadmap(elementId, items) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 italic">Tidak ada produk spesifik ditemukan untuk rutinitas ini.</p>';
+                return;
+            }
+
+            items.forEach((item, index) => {
+                let parts = item.type.split(" | 💡 ");
+                let cleanType = parts[0];
+                let xaiReason = parts[1] ? parts[1] : "";
+
+                const card = `
+                    <div class="snap-start shrink-0 w-72 bg-white rounded-2xl border border-slate-200 shadow-md hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col relative overflow-hidden group">
+                        <div class="bg-slate-800 text-white p-3 flex justify-between items-center">
+                            <span class="font-bold text-sm"><i class="fa-solid fa-check-circle mr-1 text-emerald-400"></i> ${item.step}</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded font-bold">${item.score}% Match</span>
+                        </div>
+                        <div class="h-48 bg-slate-50 flex items-center justify-center p-4 relative group-hover:bg-slate-100 transition-colors">
+                            <img src="${item.image}" alt="Produk" class="max-h-full object-contain mix-blend-multiply drop-shadow-md" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+                        </div>
+                        <div class="p-5 flex-grow flex flex-col justify-between bg-white">
+                            <div>
+                                <p class="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">${item.brand}</p>
+                                <h4 class="font-bold text-slate-800 leading-tight mb-2 line-clamp-2">${item.name}</h4>
+                                <span class="inline-block bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md mb-3">${cleanType}</span>
+                            </div>
+                            <div>
+                                <p class="text-xl font-extrabold text-slate-800">${item.price}</p>
+                            </div>
+                        </div>
+                        <div class="bg-emerald-50 border-t border-emerald-100 p-3">
+                            <p class="text-xs text-emerald-800 font-medium leading-relaxed">
+                                <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> ${xaiReason}
+                            </p>
+                        </div>
+                    </div>
+                    ${index < items.length - 1 ? `
+                    <div class="shrink-0 flex items-center justify-center w-8">
+                        <i class="fa-solid fa-chevron-right text-3xl text-slate-300"></i>
+                    </div>` : ''}
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        function downloadRoadmapPDF() {
+            const content = document.getElementById('pdf-content');
+            
+            const pagiList = document.getElementById('pagi-list');
+            const malamList = document.getElementById('malam-list');
+            const originalOverflowPagi = pagiList.style.overflow;
+            const originalOverflowMalam = malamList.style.overflow;
+            
+            pagiList.style.overflow = 'visible';
+            malamList.style.overflow = 'visible';
+            pagiList.style.flexWrap = 'wrap';
+            malamList.style.flexWrap = 'wrap';
+
+            const btn = event.currentTarget;
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Mengubah ke PDF...';
+            btn.disabled = true;
+
+            html2canvas(content, { 
+                scale: 2, 
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                pagiList.style.overflow = originalOverflowPagi;
+                malamList.style.overflow = originalOverflowMalam;
+                pagiList.style.flexWrap = 'nowrap';
+                malamList.style.flexWrap = 'nowrap';
+                
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('Roadmap_Skincare_AI.pdf');
+            });
+        }
+    </script>
+</body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skincare AI & Acne Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans pb-20 overflow-x-hidden">
+
+    <header class="bg-emerald-600 text-white shadow-md p-6 text-center w-full">
+        <h1 class="text-3xl font-bold"><i class="fa-solid fa-leaf mr-2"></i> Skincare AI Analyzer</h1>
+        <p class="mt-2 text-emerald-100">Rekomendasi Berbasis Pakar & Computer Vision</p>
+    </header>
+
+    <div class="max-w-7xl mx-auto mt-8 px-4 flex justify-center">
+        <ul class="flex w-full max-w-3xl justify-between items-center relative">
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-1" class="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">1</div>
+                <span class="text-xs font-semibold mt-2 text-emerald-700">Analisis</span>
+            </li>
+            <li class="flex-1 h-1 bg-slate-200 mx-2 rounded relative"><div id="line-1" class="absolute h-full bg-emerald-600 w-0 transition-all duration-500"></div></li>
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-2" class="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">2</div>
+                <span class="text-xs font-semibold mt-2 text-slate-500" id="text-ind-2">Preferensi</span>
+            </li>
+            <li class="flex-1 h-1 bg-slate-200 mx-2 rounded relative"><div id="line-2" class="absolute h-full bg-emerald-600 w-0 transition-all duration-500"></div></li>
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-3" class="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">3</div>
+                <span class="text-xs font-semibold mt-2 text-slate-500" id="text-ind-3">Hasil Roadmap</span>
+            </li>
+        </ul>
+    </div>
+
+    <main class="w-full max-w-7xl mx-auto mt-8 px-4">
+        
+        <div id="page1" class="fade-in block">
+            <div class="bg-white rounded-2xl shadow-sm p-8 border border-slate-200">
+                
+                <div class="mb-10">
+                    <h2 class="text-2xl font-bold mb-4 text-emerald-700"><i class="fa-solid fa-pen mr-2"></i> Detailkan Masalah Kulit Anda</h2>
+                    <p class="text-slate-500 mb-4 text-sm">Ceritakan masalah yang Anda alami secara natural. AI kami akan menerjemahkannya ke kandungan bahan yang tepat.</p>
+                    <textarea id="keluhan" rows="4" class="w-full p-4 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-emerald-500 outline-none transition text-lg resize-none" placeholder="Contoh: Saya butuh pelindung cahaya matahari karena sering kerja outdoor, tapi kulit saya gampang merah..."></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700"><i class="fa-solid fa-camera mr-2"></i> Scan Wajah (Opsional)</h2>
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        
+                        <div class="flex-1 flex flex-col items-center bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <div class="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-black shadow-inner flex items-center justify-center">
+                                <video id="video" autoplay class="w-full h-full object-cover"></video>
+                                <canvas id="canvas" class="hidden"></canvas>
+                            </div>
+                            <button onclick="captureFace()" class="mt-4 w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-300">
+                                <i class="fa-solid fa-camera-retro mr-2"></i> Ambil Foto & Analisis
+                            </button>
+                        </div>
+
+                        <div class="flex-1 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-5 relative min-h-[250px]">
+                            <div id="visionResult" class="hidden w-full text-center mb-4">
+                                <span class="inline-block bg-emerald-100 text-emerald-800 text-sm font-bold px-3 py-1 rounded-full mb-2">Hasil Deteksi AI Camera:</span>
+                                <p id="detectedClass" class="text-xl font-bold text-slate-700"></p>
+                            </div>
+                            <img id="resultImage" class="hidden w-full max-w-sm rounded-lg border-4 border-emerald-500 shadow-md object-cover" alt="Hasil Scan">
+                            <p id="placeholderImgText" class="text-slate-400 text-center"><i class="fa-solid fa-image text-3xl mb-2 block"></i>Hasil foto scan akan muncul di sini</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="mt-10 flex justify-end">
+                    <button onclick="goToPage(2)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition duration-300 text-lg flex items-center">
+                        Lanjut ke Preferensi <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="page2" class="fade-in hidden">
+            <div class="bg-white rounded-2xl shadow-sm p-10 border border-slate-200 max-w-4xl mx-auto text-center">
+                <h2 class="text-3xl font-bold mb-2 text-emerald-700"><i class="fa-solid fa-sliders mr-2"></i> Atur Preferensi Anda</h2>
+                <p class="text-slate-500 mb-10">Bantu kami menyesuaikan rekomendasi dengan kantong dan kondisi medis Anda.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <label class="block text-slate-700 font-bold mb-2 text-lg"><i class="fa-solid fa-wallet mr-2 text-emerald-600"></i> Budget Harga</label>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <span class="text-xs text-slate-500 mb-1 block">Minimum (Rp)</span>
+                                <input type="number" id="min_price" value="0" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 text-lg">
+                            </div>
+                            <div class="w-1/2">
+                                <span class="text-xs text-slate-500 mb-1 block">Maksimum (Rp)</span>
+                                <input type="number" id="max_price" value="1000000" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 text-lg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <label class="block text-slate-700 font-bold mb-2 text-lg"><i class="fa-solid fa-ban mr-2 text-red-500"></i> Bahan yang Dihindari</label>
+                        <span class="text-xs text-slate-500 mb-1 block">Pisahkan dengan koma (Contoh: alcohol, fragrance)</span>
+                        <input type="text" id="allergies" placeholder="Ketik di sini..." class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-red-500 text-lg">
+                    </div>
+                </div>
+
+                <div class="mt-12 flex justify-between">
+                    <button onclick="goToPage(1)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-8 rounded-full transition duration-300">
+                        <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
+                    </button>
+                    <button onclick="getRecommendation()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition duration-300 text-lg flex items-center">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Buat Racikan Skincare
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden text-center my-20 fade-in">
+            <div class="inline-block relative w-24 h-24">
+                <div class="absolute top-0 left-0 w-full h-full border-4 border-emerald-200 rounded-full"></div>
+                <div class="absolute top-0 left-0 w-full h-full border-4 border-emerald-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <h3 class="text-2xl font-bold mt-6 text-slate-700">AI Sedang Meracik...</h3>
+            <p class="text-slate-500 mt-2">Mencari kecocokan semantik di seluruh database.</p>
+        </div>
+
+        <div id="page3" class="fade-in hidden pb-20">
+            
+            <div id="pdf-content" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-8 mx-auto">
+                <div class="text-center mb-10">
+                    <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Roadmap Skincare Anda</h2>
+                    <p class="text-slate-500 italic">"Dirancang khusus berdasarkan AI Semantic Analysis"</p>
+                </div>
+
+                <div class="mb-16">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-amber-100 text-amber-600 p-3 rounded-full mr-4 shadow-sm"><i class="fa-solid fa-sun text-2xl"></i></div>
+                        <h3 class="text-2xl font-bold text-slate-800 border-b-4 border-amber-400 pb-1 pr-6 inline-block">Rutinitas Pagi (Day)</h3>
+                    </div>
+                    <div id="pagi-list" class="flex overflow-x-auto hide-scroll gap-6 pb-4 pt-2 px-2 snap-x"></div>
+                </div>
+
+                <div>
+                    <div class="flex items-center mb-6">
+                        <div class="bg-indigo-100 text-indigo-600 p-3 rounded-full mr-4 shadow-sm"><i class="fa-solid fa-moon text-2xl"></i></div>
+                        <h3 class="text-2xl font-bold text-slate-800 border-b-4 border-indigo-400 pb-1 pr-6 inline-block">Rutinitas Malam (Night)</h3>
+                    </div>
+                    <div id="malam-list" class="flex overflow-x-auto hide-scroll gap-6 pb-4 pt-2 px-2 snap-x"></div>
+                </div>
+            </div> 
+
+            <div class="flex justify-center gap-4">
+                <button onclick="goToPage(2)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-8 rounded-full transition duration-300 shadow-sm">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Ulangi
+                </button>
+                <button onclick="downloadRoadmapPDF()" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 px-10 rounded-full shadow-xl transition duration-300 text-lg flex items-center">
+                    <i class="fa-solid fa-file-pdf mr-2 text-xl"></i> Download Roadmap (PDF estetik)
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => { video.srcObject = stream; })
+                .catch(err => { console.error("Kamera error: ", err); });
+        }
+
+        function goToPage(pageNumber) {
+            document.getElementById('page1').classList.add('hidden');
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('page3').classList.add('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('page' + pageNumber).classList.remove('hidden');
+
+            if(pageNumber >= 1) {
+                document.getElementById('ind-1').classList.replace('bg-slate-300', 'bg-emerald-600');
+                document.getElementById('ind-1').classList.replace('text-slate-600', 'text-white');
+            }
+            if(pageNumber >= 2) {
+                document.getElementById('line-1').style.width = "100%";
+                document.getElementById('ind-2').classList.replace('bg-slate-300', 'bg-emerald-600');
+                document.getElementById('ind-2').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('text-ind-2').classList.replace('text-slate-500', 'text-emerald-700');
+            } else {
+                document.getElementById('line-1').style.width = "0%";
+                document.getElementById('ind-2').classList.replace('bg-emerald-600', 'bg-slate-300');
+                document.getElementById('ind-2').classList.replace('text-white', 'text-slate-600');
+                document.getElementById('text-ind-2').classList.replace('text-emerald-700', 'text-slate-500');
+            }
+            if(pageNumber >= 3) {
+                document.getElementById('line-2').style.width = "100%";
+                document.getElementById('ind-3').classList.replace('bg-slate-300', 'bg-emerald-600');
+                document.getElementById('ind-3').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('text-ind-3').classList.replace('text-slate-500', 'text-emerald-700');
+            } else {
+                document.getElementById('line-2').style.width = "0%";
+                document.getElementById('ind-3').classList.replace('bg-emerald-600', 'bg-slate-300');
+                document.getElementById('ind-3').classList.replace('text-white', 'text-slate-600');
+                document.getElementById('text-ind-3').classList.replace('text-emerald-700', 'text-slate-500');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function captureFace() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Image = canvas.toDataURL('image/jpeg');
+
+            fetch('/detect_face', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Image })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    const resultImg = document.getElementById('resultImage');
+                    document.getElementById('placeholderImgText').classList.add('hidden');
+                    resultImg.classList.remove('hidden');
+                    resultImg.src = data.image_with_boxes; 
+                    
+                    document.getElementById('visionResult').classList.remove('hidden');
+                    document.getElementById('detectedClass').innerText = data.detection;
+                    
+                    let inputKeluhan = document.getElementById('keluhan');
+                    let teksLama = inputKeluhan.value.replace(/ \| AI mendeteksi.*/g, ''); 
+                    if (teksLama.trim() === "") {
+                        inputKeluhan.value = "AI mendeteksi wajah saya: " + data.detection;
+                    } else {
+                        inputKeluhan.value = teksLama + " | AI mendeteksi wajah saya: " + data.detection;
+                    }
+                } else {
+                    alert("Error AI Kamera: " + data.error);
+                }
+            })
+            .catch(err => { console.error(err); });
+        }
+
+        function getRecommendation() {
+            const keluhan = document.getElementById('keluhan').value;
+            const min_price = document.getElementById('min_price').value;
+            const max_price = document.getElementById('max_price').value;
+            let allergiesStr = document.getElementById('allergies').value;
+            let allergies = allergiesStr ? allergiesStr.split(',').map(item => item.trim()) : [];
+
+            if (!keluhan.trim()) {
+                alert("Mohon isi keluhan Anda di halaman pertama sebelum meracik.");
+                goToPage(1);
+                return;
+            }
+
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            fetch('/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keluhan, min_price, max_price, allergies })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.error) {
+                    alert(data.error);
+                    goToPage(1);
+                    return;
+                }
+                
+                goToPage(3);
+                renderRoadmap('pagi-list', data.pagi);
+                renderRoadmap('malam-list', data.malam);
+            })
+            .catch(err => {
+                document.getElementById('loading').classList.add('hidden');
+                alert("Terjadi kesalahan server saat memproses AI.");
+                goToPage(2);
+            });
+        }
+
+        function renderRoadmap(elementId, items) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 italic">Tidak ada produk spesifik ditemukan untuk rutinitas ini.</p>';
+                return;
+            }
+
+            items.forEach((item, index) => {
+                let parts = item.type.split(" | 💡 ");
+                let cleanType = parts[0];
+                let xaiReason = parts[1] ? parts[1] : "";
+
+                const card = `
+                    <div class="snap-start shrink-0 w-72 bg-white rounded-2xl border border-slate-200 shadow-md hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col relative overflow-hidden group">
+                        <div class="bg-slate-800 text-white p-3 flex justify-between items-center">
+                            <span class="font-bold text-sm"><i class="fa-solid fa-check-circle mr-1 text-emerald-400"></i> ${item.step}</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded font-bold">${item.score}% Match</span>
+                        </div>
+                        <div class="h-48 bg-slate-50 flex items-center justify-center p-4 relative group-hover:bg-slate-100 transition-colors">
+                            <img src="${item.image}" alt="Produk" crossorigin="anonymous" class="max-h-full object-contain mix-blend-multiply drop-shadow-md" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+                        </div>
+                        <div class="p-5 flex-grow flex flex-col justify-between bg-white">
+                            <div>
+                                <p class="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">${item.brand}</p>
+                                <h4 class="font-bold text-slate-800 leading-tight mb-2 line-clamp-2">${item.name}</h4>
+                                <span class="inline-block bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md mb-3">${cleanType}</span>
+                            </div>
+                            <div>
+                                <p class="text-xl font-extrabold text-slate-800">${item.price}</p>
+                            </div>
+                        </div>
+                        <div class="bg-emerald-50 border-t border-emerald-100 p-3">
+                            <p class="text-xs text-emerald-800 font-medium leading-relaxed">
+                                <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> ${xaiReason}
+                            </p>
+                        </div>
+                    </div>
+                    ${index < items.length - 1 ? `
+                    <div class="shrink-0 flex items-center justify-center w-8">
+                        <i class="fa-solid fa-chevron-right text-3xl text-slate-300"></i>
+                    </div>` : ''}
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // --- PERBAIKAN FUNGSI PDF (ANTI-HANCUR) ---
+        function downloadRoadmapPDF() {
+            const content = document.getElementById('pdf-content');
+            const pagiList = document.getElementById('pagi-list');
+            const malamList = document.getElementById('malam-list');
+            
+            // Simpan style asli
+            const originalContentWidth = content.style.width;
+            const originalOverflowPagi = pagiList.style.overflow;
+            const originalOverflowMalam = malamList.style.overflow;
+            
+            // PAKSA ELEMEN MELEBAR (Menghindari "Gepeng" / Wrap paksa)
+            content.style.width = 'max-content';
+            pagiList.style.overflow = 'visible';
+            malamList.style.overflow = 'visible';
+
+            const btn = event.currentTarget;
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Membuat PDF Resolusi Tinggi...';
+            btn.disabled = true;
+
+            html2canvas(content, { 
+                scale: 2, // Kualitas HD
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                // KEMBALIKAN STYLE KE SEMULA
+                content.style.width = originalContentWidth;
+                pagiList.style.overflow = originalOverflowPagi;
+                malamList.style.overflow = originalOverflowMalam;
+                
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                
+                // BUAT PDF DINAMIS (LANDSCAPE) MENGKUTI UKURAN GAMBAR
+                // l = landscape, px = pixels, [lebar, tinggi]
+                const pdf = new window.jspdf.jsPDF('l', 'px', [canvas.width, canvas.height]);
+                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                pdf.save('Roadmap_Skincare_AI.pdf');
+                
+            }).catch(err => {
+                console.error("Error PDF: ", err);
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skincare AI & Acne Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Animasi Khusus Pop-Up Error */
+        @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-scale-up { animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans pb-20 overflow-x-hidden relative">
+
+    <div id="errorPopup" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl border border-red-100 animate-scale-up">
+            <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 animate-bounce">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">Peringatan Sistem</h3>
+            <p id="errorMessageText" class="text-slate-600 mb-6 text-sm leading-relaxed"></p>
+            <button onclick="closeErrorPopup()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-300">
+                <i class="fa-solid fa-rotate-left mr-2"></i> Tutup & Coba Lagi
+            </button>
+        </div>
+    </div>
+
+    <header class="bg-pink-600 text-white shadow-md p-6 text-center w-full">
+        <h1 class="text-3xl font-bold"><i class="fa-solid fa-leaf mr-2"></i> SkincareMatch</h1>
+        <p class="mt-2 text-pink-100">Rekomendasi Berbasis Pakar & Computer Vision</p>
+    </header>
+
+    <div class="max-w-7xl mx-auto mt-8 px-4 flex justify-center">
+        <ul class="flex w-full max-w-3xl justify-between items-center relative">
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-1" class="w-10 h-10 bg-pink-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">1</div>
+                <span class="text-xs font-semibold mt-2 text-pink-700">Analisis</span>
+            </li>
+            <li class="flex-1 h-1 bg-slate-200 mx-2 rounded relative"><div id="line-1" class="absolute h-full bg-pink-600 w-0 transition-all duration-500"></div></li>
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-2" class="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">2</div>
+                <span class="text-xs font-semibold mt-2 text-slate-500" id="text-ind-2">Preferensi</span>
+            </li>
+            <li class="flex-1 h-1 bg-slate-200 mx-2 rounded relative"><div id="line-2" class="absolute h-full bg-pink-600 w-0 transition-all duration-500"></div></li>
+            <li class="flex flex-col items-center z-10">
+                <div id="ind-3" class="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold shadow-lg transition-colors">3</div>
+                <span class="text-xs font-semibold mt-2 text-slate-500" id="text-ind-3">Hasil Roadmap</span>
+            </li>
+        </ul>
+    </div>
+
+    <main class="w-full max-w-7xl mx-auto mt-8 px-4">
+        
+        <div id="page1" class="fade-in block">
+            <div class="bg-white rounded-2xl shadow-sm p-8 border border-slate-200">
+                
+                <div class="mb-10">
+                    <h2 class="text-2xl font-bold mb-4 text-pink-700"><i class="fa-solid fa-pen mr-2"></i> Detailkan Masalah Kulit Anda</h2>
+                    <p class="text-slate-500 mb-4 text-sm">Ceritakan masalah yang Anda alami secara natural. AI kami akan menerjemahkannya ke kandungan bahan yang tepat.</p>
+                    <textarea id="keluhan" rows="4" class="w-full p-4 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-pink-500 outline-none transition text-lg resize-none" placeholder="Contoh: Saya butuh pelindung cahaya matahari karena sering kerja outdoor, tapi kulit saya gampang merah..."></textarea>
+                </div>
+
+                <div class="mb-6">  
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700"><i class="fa-solid fa-camera mr-2"></i> Scan Wajah (Opsional)</h2>
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        
+                        <div class="flex-1 flex flex-col items-center bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <div class="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-black shadow-inner flex items-center justify-center">
+                                <video id="video" autoplay class="w-full h-full object-cover"></video>
+                                <canvas id="canvas" class="hidden"></canvas>
+                            </div>
+                            <button onclick="captureFace()" class="mt-4 w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-300">
+                                <i class="fa-solid fa-camera-retro mr-2"></i> Ambil Foto & Analisis
+                            </button>
+                        </div>
+
+                        <div class="flex-1 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-5 relative min-h-[250px]">
+                            <div id="visionResult" class="hidden w-full text-center mb-4">
+                                <span class="inline-block bg-pink-100 text-pink-800 text-sm font-bold px-3 py-1 rounded-full mb-2">Hasil Deteksi AI Camera:</span>
+                                <p id="detectedClass" class="text-xl font-bold text-slate-700"></p>
+                            </div>
+                            <img id="resultImage" class="hidden w-full max-w-sm rounded-lg border-4 border-pink-500 shadow-md object-cover" alt="Hasil Scan">
+                            <p id="placeholderImgText" class="text-slate-400 text-center"><i class="fa-solid fa-image text-3xl mb-2 block"></i>Hasil foto scan akan muncul di sini</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="mt-10 flex justify-end">
+                    <button onclick="goToPage(2)" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition duration-300 text-lg flex items-center">
+                        Lanjut ke Preferensi <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="page2" class="fade-in hidden">
+            <div class="bg-white rounded-2xl shadow-sm p-10 border border-slate-200 max-w-4xl mx-auto text-center">
+                <h2 class="text-3xl font-bold mb-2 text-pink-700"><i class="fa-solid fa-sliders mr-2"></i> Atur Preferensi Anda</h2>
+                <p class="text-slate-500 mb-10">Bantu kami menyesuaikan rekomendasi dengan kantong dan kondisi medis Anda.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <label class="block text-slate-700 font-bold mb-2 text-lg"><i class="fa-solid fa-wallet mr-2 text-pink-600"></i> Budget Harga</label>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <span class="text-xs text-slate-500 mb-1 block">Minimum (Rp)</span>
+                                <input type="number" id="min_price" value="0" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-pink-500 text-lg">
+                            </div>
+                            <div class="w-1/2">
+                                <span class="text-xs text-slate-500 mb-1 block">Maksimum (Rp)</span>
+                                <input type="number" id="max_price" value="1000000" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-pink-500 text-lg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <label class="block text-slate-700 font-bold mb-2 text-lg"><i class="fa-solid fa-ban mr-2 text-red-500"></i> Bahan yang Dihindari</label>
+                        <span class="text-xs text-slate-500 mb-1 block">Pisahkan dengan koma (Contoh: alcohol, fragrance)</span>
+                        <input type="text" id="allergies" placeholder="Ketik di sini..." class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-red-500 text-lg">
+                    </div>
+                </div>
+
+                <div class="mt-12 flex justify-between">
+                    <button onclick="goToPage(1)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-8 rounded-full transition duration-300">
+                        <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
+                    </button>
+                    <button onclick="getRecommendation()" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition duration-300 text-lg flex items-center">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Buat Racikan Skincare
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden text-center my-20 fade-in">
+            <div class="inline-block relative w-24 h-24">
+                <div class="absolute top-0 left-0 w-full h-full border-4 border-pink-200 rounded-full"></div>
+                <div class="absolute top-0 left-0 w-full h-full border-4 border-pink-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <h3 class="text-2xl font-bold mt-6 text-slate-700">AI Sedang Meracik...</h3>
+            
+            <div class="max-w-md mx-auto mt-4 bg-pink-50 text-pink-800 p-4 rounded-xl border border-pink-100 shadow-sm">
+                <p class="text-xs uppercase tracking-wider font-bold text-pink-600 mb-1"><i class="fa-solid fa-lightbulb mr-1"></i> Fakta Skincare & AI</p>
+                <p id="triviaText" class="text-sm font-medium transition-opacity duration-300">Menghubungkan keluhan bahasa Indonesia Anda ke basis data medis...</p>
+            </div>
+        </div>
+
+        <div id="page3" class="fade-in hidden pb-20">
+            
+            <div id="pdf-content" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-8 mx-auto">
+                
+                <div class="flex flex-col lg:flex-row justify-between items-center border-b-2 border-slate-100 pb-6 mb-6 gap-4">
+                    <div class="text-center lg:text-left">
+                        <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Roadmap Skincare Anda</h2>
+                        <p class="text-slate-500 italic">"Dirancang khusus berdasarkan AI Semantic Analysis"</p>
+                    </div>
+                    <div class="bg-pink-600 text-white px-6 py-4 rounded-2xl shadow-md text-center lg:text-right">
+                        <span class="text-xs uppercase tracking-widest font-black text-pink-200 block mb-1"><i class="fa-solid fa-calculator mr-1"></i> Total Investasi</span>
+                        <span id="totalCostText" class="text-2xl font-black">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="bg-pink-50 border border-pink-100 p-5 rounded-2xl mb-10 text-left shadow-sm">
+                    <span class="text-xs uppercase tracking-widest font-black text-pink-600 block mb-1"><i class="fa-solid fa-quote-left mr-1"></i> Kondisi / Keluhan Anda :</span>
+                    <p id="displayKeluhan" class="text-slate-700 italic font-medium leading-relaxed"></p>
+                </div>
+
+                <div class="mb-16">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-amber-100 text-amber-600 p-3 rounded-full mr-4 shadow-sm"><i class="fa-solid fa-sun text-2xl"></i></div>
+                        <h3 class="text-2xl font-bold text-slate-800 border-b-4 border-amber-400 pb-1 pr-6 inline-block">Rutinitas Pagi (Day)</h3>
+                    </div>
+                    <div id="pagi-list" class="flex overflow-x-auto hide-scroll gap-6 pb-4 pt-2 px-2 snap-x"></div>
+                </div>
+
+                <div class="mb-12">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-indigo-100 text-indigo-600 p-3 rounded-full mr-4 shadow-sm"><i class="fa-solid fa-moon text-2xl"></i></div>
+                        <h3 class="text-2xl font-bold text-slate-800 border-b-4 border-indigo-400 pb-1 pr-6 inline-block">Rutinitas Malam (Night)</h3>
+                    </div>
+                    <div id="malam-list" class="flex overflow-x-auto hide-scroll gap-6 pb-4 pt-2 px-2 snap-x"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200 mt-10">
+                    <div class="bg-white p-5 rounded-xl border border-pink-100 shadow-sm">
+                        <h4 class="font-bold text-pink-700 text-lg mb-2"><i class="fa-solid fa-circle-check mr-2"></i> Hal yang Diwajibkan (Do's)</h4>
+                        <ul id="dosList" class="text-sm text-slate-600 space-y-2 list-disc pl-5"></ul>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-pink-100 shadow-sm">
+                        <h4 class="font-bold text-pink-700 text-lg mb-2"><i class="fa-solid fa-circle-xmark mr-2"></i> Hal yang Dilarang (Don'ts)</h4>
+                        <ul id="dontsList" class="text-sm text-slate-600 space-y-2 list-disc pl-5"></ul>
+                    </div>
+                </div>
+
+            </div> 
+
+            <div class="flex justify-center gap-4 flex-wrap mt-8">
+                
+                <button onclick="goToPage(1)" class="bg-pink-800 hover:bg-pink-900 text-white font-bold py-3 px-8 rounded-full transition duration-300 shadow-sm flex items-center">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Konsultasi Lagi
+                </button>
+                
+                <button onclick="goToPage(2)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-8 rounded-full transition duration-300 shadow-sm flex items-center">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
+                </button>
+
+                <button id="btnDownload" onclick="downloadRoadmapPDF()" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 px-10 rounded-full shadow-xl transition duration-300 text-lg flex items-center">
+                    <i class="fa-solid fa-file-pdf mr-2 text-xl"></i> Download Roadmap (PDF)
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const triviaFacts = [
+            "Mencocokkan profil keluhan bahasa Indonesia Anda ke basis data medis...",
+            "Tahukah Anda? Sinar UV tetap menembus kaca walau cuaca mendung.",
+            "Memilah produk malam (Retinol/AHA) agar tak tercampur ke paket Pagi...",
+            "Tahukah Anda? Sunscreen wajib re-apply setiap 3 jam sekali.",
+            "Menghitung skor kecocokan semantik dan menyortir kualitas produk..."
+        ];
+        let triviaInterval;
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => { video.srcObject = stream; })
+                .catch(err => { console.error("Kamera error: ", err); });
+        }
+
+        function showCustomError(message) {
+            document.getElementById('errorMessageText').innerText = message;
+            document.getElementById('errorPopup').classList.remove('hidden');
+        }
+        function closeErrorPopup() {
+            document.getElementById('errorPopup').classList.add('hidden');
+        }
+
+        function goToPage(pageNumber) {
+            document.getElementById('page1').classList.add('hidden');
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('page3').classList.add('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            
+            document.getElementById('page' + pageNumber).classList.remove('hidden');
+
+            if(pageNumber === 2) clearInterval(triviaInterval);
+
+            if(pageNumber >= 1) {
+                document.getElementById('ind-1').classList.replace('bg-slate-300', 'bg-pink-600');
+                document.getElementById('ind-1').classList.replace('text-slate-600', 'text-white');
+            }
+            if(pageNumber >= 2) {
+                document.getElementById('line-1').style.width = "100%";
+                document.getElementById('ind-2').classList.replace('bg-slate-300', 'bg-pink-600');
+                document.getElementById('ind-2').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('text-ind-2').classList.replace('text-slate-500', 'text-pink-700');
+            } else {
+                document.getElementById('line-1').style.width = "0%";
+                document.getElementById('ind-2').classList.replace('bg-pink-600', 'bg-slate-300');
+                document.getElementById('ind-2').classList.replace('text-white', 'text-slate-600');
+                document.getElementById('text-ind-2').classList.replace('text-pink-700', 'text-slate-500');
+            }
+            if(pageNumber >= 3) {
+                document.getElementById('line-2').style.width = "100%";
+                document.getElementById('ind-3').classList.replace('bg-slate-300', 'bg-pink-600');
+                document.getElementById('ind-3').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('text-ind-3').classList.replace('text-slate-500', 'text-pink-700');
+            } else {
+                document.getElementById('line-2').style.width = "0%";
+                document.getElementById('ind-3').classList.replace('bg-pink-600', 'bg-slate-300');
+                document.getElementById('ind-3').classList.replace('text-white', 'text-slate-600');
+                document.getElementById('text-ind-3').classList.replace('text-pink-700', 'text-slate-500');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function captureFace() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Image = canvas.toDataURL('image/jpeg');
+
+            fetch('/detect_face', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Image })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    const resultImg = document.getElementById('resultImage');
+                    document.getElementById('placeholderImgText').classList.add('hidden');
+                    resultImg.classList.remove('hidden');
+                    resultImg.src = data.image_with_boxes; 
+                    
+                    document.getElementById('visionResult').classList.remove('hidden');
+                    document.getElementById('detectedClass').innerText = data.detection;
+                    
+                    let inputKeluhan = document.getElementById('keluhan');
+                    let teksLama = inputKeluhan.value.replace(/ \| AI mendeteksi.*/g, ''); 
+                    if (teksLama.trim() === "") {
+                        inputKeluhan.value = "AI mendeteksi wajah saya: " + data.detection;
+                    } else {
+                        inputKeluhan.value = teksLama + " | AI mendeteksi wajah saya: " + data.detection;
+                    }
+                } else {
+                    showCustomError("AI Kamera Gagal: " + data.error);
+                }
+            })
+            .catch(err => { console.error(err); });
+        }
+
+        function getRecommendation() {
+            const keluhan = document.getElementById('keluhan').value;
+            const min_price = document.getElementById('min_price').value;
+            const max_price = document.getElementById('max_price').value;
+            let allergiesStr = document.getElementById('allergies').value;
+            let allergies = allergiesStr ? allergiesStr.split(',').map(item => item.trim()) : [];
+
+            if (!keluhan.trim()) {
+                showCustomError("Mohon isi keluhan Anda di halaman pertama sebelum meracik.");
+                goToPage(1);
+                return;
+            }
+
+            // TAMPILKAN KELUHAN DI HALAMAN 3
+            document.getElementById('displayKeluhan').innerText = keluhan;
+
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            let idx = 0;
+            triviaInterval = setInterval(() => {
+                idx = (idx + 1) % triviaFacts.length;
+                const txtEl = document.getElementById('triviaText');
+                txtEl.style.opacity = 0;
+                setTimeout(() => {
+                    txtEl.innerText = triviaFacts[idx];
+                    txtEl.style.opacity = 1;
+                }, 300);
+            }, 2500);
+
+            fetch('/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keluhan, min_price, max_price, allergies })
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(triviaInterval);
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.error) {
+                    showCustomError(data.error);
+                    goToPage(1);
+                    return;
+                }
+                
+                goToPage(3);
+                calculateTotalCost(data.pagi, data.malam);
+                generateDosAndDonts(keluhan);
+
+                renderRoadmap('pagi-list', data.pagi);
+                renderRoadmap('malam-list', data.malam);
+                
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            })
+            .catch(err => {
+                clearInterval(triviaInterval);
+                document.getElementById('loading').classList.add('hidden');
+                showCustomError("Terjadi kegagalan komunikasi dengan server.");
+                goToPage(2);
+            });
+        }
+
+        function calculateTotalCost(pagi, malam) {
+            let total = 0;
+            const parsePrice = (str) => parseInt(str.replace(/[^0-9]/g, '')) || 0;
+            pagi.forEach(i => total += parsePrice(i.price));
+            malam.forEach(i => total += parsePrice(i.price));
+            document.getElementById('totalCostText').innerText = "Rp " + total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        function generateDosAndDonts(text) {
+            const query = text.toLowerCase();
+            const dos = document.getElementById('dosList');
+            const donts = document.getElementById('dontsList');
+            
+            if(query.includes('jerawat') || query.includes('acne')) {
+                dos.innerHTML = `<li>Gunakan handuk khusus wajah yang bersih.</li><li>Gunakan pelembap berbasis gel ringan.</li><li>Lakukan double cleansing setelah outdoor.</li>`;
+                donts.innerHTML = `<li>Jangan memencet jerawat dengan tangan kotor!</li><li>Kurangi konsumsi produk olahan susu & gula.</li><li>Hindari scrub fisik berbutir kasar.</li>`;
+            } else if(query.includes('keriput') || query.includes('aging') || query.includes('tua')) {
+                dos.innerHTML = `<li>Wajib aplikasikan sunscreen di pagi hari.</li><li>Gunakan serum retinol secara bertahap.</li><li>Perbanyak konsumsi antioksidan.</li>`;
+                donts.innerHTML = `<li>Jangan lewatkan pelembap.</li><li>Jangan eksfoliasi terlalu sering.</li><li>Hindari kebiasaan begadang.</li>`;
+            } else {
+                dos.innerHTML = `<li>Jaga hidrasi dengan pelembap yang sesuai.</li><li>Gunakan tabir surya di siang hari.</li><li>Konsisten dengan urutan skincare.</li>`;
+                donts.innerHTML = `<li>Jangan gonta-ganti produk aktif bersamaan.</li><li>Jangan cuci muka lebih dari 3x sehari.</li><li>Jangan malas bersihkan muka malam hari.</li>`;
+            }
+        }
+
+        function renderRoadmap(elementId, items) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 italic">Tidak ada produk spesifik ditemukan untuk rutinitas ini.</p>';
+                return;
+            }
+
+            items.forEach((item, index) => {
+                let parts = item.type.split(" | 💡 ");
+                let cleanType = parts[0];
+                let xaiReason = parts[1] ? parts[1] : "";
+
+                const card = `
+                    <div class="snap-start shrink-0 w-72 bg-white rounded-2xl border border-slate-200 shadow-md hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col relative overflow-hidden group">
+                        <div class="bg-slate-800 text-white p-3 flex justify-between items-center">
+                            <span class="font-bold text-sm"><i class="fa-solid fa-check-circle mr-1 text-pink-400"></i> ${item.step}</span>
+                            <span class="bg-white/20 text-xs px-2 py-1 rounded font-bold">${item.score}% Match</span>
+                        </div>
+                        <div class="h-48 bg-slate-50 flex items-center justify-center p-4 relative group-hover:bg-slate-100 transition-colors">
+                            <img src="${item.image}" alt="Produk" crossorigin="anonymous" class="max-h-full object-contain mix-blend-multiply drop-shadow-md" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+                        </div>
+                        <div class="p-5 flex-grow flex flex-col justify-between bg-white">
+                            <div>
+                                <p class="text-xs font-black text-pink-600 uppercase tracking-widest mb-1">${item.brand}</p>
+                                <h4 class="font-bold text-slate-800 leading-tight mb-2 line-clamp-2">${item.name}</h4>
+                                <span class="inline-block bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md mb-3">${cleanType}</span>
+                            </div>
+                            <div>
+                                <p class="text-xl font-extrabold text-slate-800">${item.price}</p>
+                            </div>
+                        </div>
+                        <div class="bg-pink-50 border-t border-pink-100 p-3">
+                            <p class="text-xs text-pink-800 font-medium leading-relaxed">
+                                <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> ${xaiReason}
+                            </p>
+                        </div>
+                    </div>
+                    ${index < items.length - 1 ? `
+                    <div class="konektor-panah shrink-0 flex items-center justify-center w-8">
+                        <i class="fa-solid fa-chevron-right text-3xl text-slate-300"></i>
+                    </div>` : ''}
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // FUNGSI DOWNLOAD PDF YANG DIPERBARUI (TIDAK AKAN TERPOTONG!)
+        function downloadRoadmapPDF() {
+            const content = document.getElementById('pdf-content');
+            const pagiList = document.getElementById('pagi-list');
+            const malamList = document.getElementById('malam-list');
+            const btn = document.getElementById('btnDownload');
+            
+            const originalContentWidth = content.style.width;
+            const originalContentMaxWidth = content.style.maxWidth;
+            
+            // Sembunyikan tanda panah penghubung
+            const arrows = content.querySelectorAll('.konektor-panah');
+            arrows.forEach(el => el.style.display = 'none');
+
+            // KECILKAN KOTAK PRODUK AGAR MUAT BANYAK DI PDF
+            const cards = content.querySelectorAll('.snap-start');
+            cards.forEach(card => {
+                card.classList.remove('w-72');
+                card.classList.add('w-56'); // Ukuran dikecilkan
+            });
+
+            // Ubah scroll menyamping menjadi barisan grid kotak-kotak
+            pagiList.classList.remove('overflow-x-auto', 'snap-x');
+            pagiList.classList.add('flex-wrap', 'justify-center');
+            malamList.classList.remove('overflow-x-auto', 'snap-x');
+            malamList.classList.add('flex-wrap', 'justify-center');
+            
+            // Batasi lebar agar susunannya padat
+            content.style.width = '1000px'; 
+            content.style.maxWidth = 'none';
+            document.body.classList.remove('overflow-x-hidden');
+
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Mengekspor PDF...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                html2canvas(content, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    backgroundColor: '#ffffff'
+                }).then(canvas => {
+                    
+                    // KEMBALIKAN SEMUA STYLE KE AWAL (Kembali jadi Scroll)
+                    content.style.width = originalContentWidth;
+                    content.style.maxWidth = originalContentMaxWidth;
+                    
+                    pagiList.classList.add('overflow-x-auto', 'snap-x');
+                    pagiList.classList.remove('flex-wrap', 'justify-center');
+                    malamList.classList.add('overflow-x-auto', 'snap-x');
+                    malamList.classList.remove('flex-wrap', 'justify-center');
+                    
+                    document.body.classList.add('overflow-x-hidden');
+                    arrows.forEach(el => el.style.display = 'flex');
+                    
+                    cards.forEach(card => {
+                        card.classList.remove('w-56');
+                        card.classList.add('w-72'); // Besarkan kembali ukurannya
+                    });
+                    
+                    btn.innerHTML = oldText;
+                    btn.disabled = false;
+
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                    
+                    // KUNCI UTAMA ANTI TERPOTONG: UKURAN KERTAS PDF MENGIKUTI UKURAN GAMBAR!
+                    const pdf = new window.jspdf.jsPDF({
+                        orientation: canvas.width > canvas.height ? 'l' : 'p',
+                        unit: 'px',
+                        format: [canvas.width, canvas.height] // Bukan A4 lagi, ukurannya dinamis memanjang
+                    });
+                    
+                    pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                    pdf.save('Roadmap_Skincare_AI.pdf');
+                    
+                }).catch(err => {
+                    console.error("Error: ", err);
+                    content.style.width = originalContentWidth;
+                    pagiList.classList.add('overflow-x-auto', 'snap-x');
+                    pagiList.classList.remove('flex-wrap', 'justify-center');
+                    btn.innerHTML = oldText;
+                    btn.disabled = false;
+                    showCustomError("Gagal memproses gambar untuk PDF.");
+                });
+            }, 500);
+        }
+    </script>
+</body>
+</html>

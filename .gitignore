@@ -1,0 +1,17 @@
+# Mengabaikan folder environment
+venv/
+env/
+
+# Mengabaikan file model berat AI
+*.pth
+*.pt
+
+# Mengabaikan folder dataset gambar
+dataset/
+dataset_acne_grading/
+dataset_baru_vit/
+__pycache__/
+
+# Mengabaikan file cache Mac/Windows
+.DS_Store
+Thumbs.db
